@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 from typing import Callable
 
+epsilon = 1e-5
 
 def binary_tversky_coef(y_true: tf.Tensor, y_pred: tf.Tensor, beta: float, smooth: float = 1.) -> tf.Tensor:
     """
@@ -44,7 +45,7 @@ def convert_to_logits(y_pred: tf.Tensor) -> tf.Tensor:
     # To avoid unwanted behaviour of log operation
     y_pred = K.clip(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
 
-    return K.log(y_pred / (1 - y_pred))
+    return K.log(y_pred / (1 - y_pred) + epsilon)
 
 
 def binary_dice_coef_loss(smooth: float = 1.) -> Callable[[tf.Tensor, tf.Tensor], tf.Tensor]:
@@ -245,7 +246,7 @@ def binary_focal_loss(beta: float, gamma: float = 2.) -> Callable[[tf.Tensor, tf
         :param y_pred: Predicted masks (tf.Tensor, shape=(<BATCH_SIZE>, <IMAGE_HEIGHT>, <IMAGE_WIDTH>, 1))
         :return: Focal loss (tf.Tensor, shape=(<BATCH_SIZE>,))
         """
-        f_loss = beta * (1 - y_pred) ** gamma * y_true * K.log(y_pred)  # β*(1-p̂)ᵞ*p*log(p̂)
+        f_loss = beta * (1 - y_pred) ** gamma * y_true * K.log(y_pred + epsilon)  # β*(1-p̂)ᵞ*p*log(p̂)
         f_loss += (1 - beta) * y_pred ** gamma * (1 - y_true) * K.log(1 - y_pred)  # (1-β)*p̂ᵞ*(1−p)*log(1−p̂)
         f_loss = -f_loss  # −[β*(1-p̂)ᵞ*p*log(p̂) + (1-β)*p̂ᵞ*(1−p)*log(1−p̂)]
 
