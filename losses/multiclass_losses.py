@@ -4,6 +4,7 @@ from tensorflow.keras.activations import softmax
 from typing import Callable, Union
 import numpy as np
 
+epsilon = 1e-5
 
 def multiclass_weighted_tanimoto_loss(class_weights: Union[list, np.ndarray, tf.Tensor]) -> Callable[[tf.Tensor, tf.Tensor], tf.Tensor]:
     """
@@ -136,7 +137,7 @@ def multiclass_weighted_cross_entropy(class_weights: list, is_logits: bool = Fal
         y_pred = K.clip(y_pred, K.epsilon(), 1-K.epsilon())  # To avoid unwanted behaviour in K.log(y_pred)
 
         # p * log(p̂) * class_weights
-        wce_loss = y_true * K.log(y_pred) * class_weights
+        wce_loss = y_true * K.log(y_pred + epsilon) * class_weights
 
         # Average over each data point/image in batch
         axis_to_reduce = range(1, K.ndim(wce_loss))
@@ -173,7 +174,7 @@ def multiclass_focal_loss(class_weights: Union[list, np.ndarray, tf.Tensor],
         :param y_pred: Predicted masks (tf.Tensor, shape=(<BATCH_SIZE>, <IMAGE_HEIGHT>, <IMAGE_WIDTH>, <N_CLASSES>))
         :return: Focal loss (tf.Tensor, shape=(None,))
         """
-        f_loss = -(class_weights * (1-y_pred)**gamma * y_true * K.log(y_pred))
+        f_loss = -(class_weights * (1-y_pred)**gamma * y_true * K.log(y_pred + epsilon))
 
         # Average over each data point/image in batch
         axis_to_reduce = range(1, K.ndim(f_loss))
